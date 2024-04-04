@@ -157,6 +157,13 @@ const addExpense = async (req, res) => {
             amount: amount,
             category: category,
         });
+        const user = await User.findById(req.user._id);
+        user.totalExpense += newExpense.amount;
+        await user.save();
+        if (user.totalExpense > 10000) {
+            user.isPremiumEligible = true;
+            await user.save();
+        }
         const allowedProperties = [
             "item",
             "location",
@@ -302,49 +309,66 @@ const getExpense = async (req, res) => {
 };
 const updateExpense = async (req, res) => {
     const { id } = req.params;
-    console.log(req.body);
-    const updatedExpense = await Expense.findByIdAndUpdate(id, req.body, {
-        new: true,
-    });
-    if (!updatedExpense) {
-        console.log("Document not found");
-        return res.status(404).json({ success: false });
-    }
-    const allowedProperties = [
-        "item",
-        "location",
-        "date",
-        "amount",
-        "category",
-        "_id",
-        "paymentType",
-    ];
-    console.log(updatedExpense);
-    const responseData = {};
-    allowedProperties.forEach((property) => {
-        if (property === "date") {
-            responseData[property] =
-                updatedExpense[property].toLocaleDateString("en-GB");
-        } else {
-            responseData[property] = updatedExpense[property];
-        }
-    });
+    const updatedAmount = req.body.amount;
 
-    return res
-        .status(200)
-        .json({ success: true, updatedExpense: updatedExpense });
+    try {
+        // Find the expense by ID
+        const updatedExpense = await Expense.findById(id);
+
+        if (!updatedExpense) {
+            return res
+                .status(404)
+                .json({ success: false, message: "Expense not found" });
+        }
+        const prevAmount = updatedExpense.amount;
+        const amountDiff = updatedAmount - prevAmount;
+
+        updatedExpense.set(req.body);
+        await updatedExpense.save();
+
+        const user = await User.findById(req.user._id);
+        user.totalExpense += amountDiff;
+        await user.save();
+
+        if (user.totalExpense > 10000) {
+            user.isPremiumEligible = true;
+            await user.save();
+        }
+
+        const responseData = {
+            ...updatedExpense.toObject(),
+            date: updatedExpense.date.toLocaleDateString("en-GB"),
+        };
+
+        return res
+            .status(200)
+            .json({ success: true, updatedExpense: responseData });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Failed to update expense",
+            error: error.message,
+        });
+    }
 };
+
 const deleteExpense = async (req, res) => {
     try {
         const { id } = req.params;
-        console.log("insedie");
-        const deletedExpense = await Expense.findByIdAndDelete(id);
+        const deletedExpense = await Expense.findById(id);
 
-        // Check if document was found and deleted
         if (!deletedExpense) {
             return res
                 .status(404)
                 .json({ success: false, message: "Expense not found" });
+        }
+        await deletedExpense.remove();
+        const user = await User.findById(req.user._id);
+        user.totalExpense -= deletedExpense.amount;
+        await user.save();
+        if (user.totalExpense < 10000) {
+            user.isPremiumEligible = false;
+            await user.save();
         }
 
         return res.status(200).json({
@@ -357,6 +381,7 @@ const deleteExpense = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+
 module.exports = {
     fetchUserDetails,
     updateUserDetails,

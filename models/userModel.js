@@ -38,6 +38,18 @@ const userSchema = new mongoose.Schema({
     emailVerificationToken: {
         type: String,
     },
+    totalExpense: {
+        type: Number,
+        default: 0,
+    },
+    isPremium: {
+        type: Boolean,
+        default: false,
+    },
+    isPremiumEligible: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const User = mongoose.model("User", userSchema);

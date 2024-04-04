@@ -11,7 +11,7 @@ const apiRoutes = require("./routes/apiRoutes");
 const app = express();
 app.use(
     cors({
-        origin: ["http://localhost:5173"],
+        origin: ["http://localhost:5173", "http://localhost:3000"],
     })
 );
 app.use(bodyParser.json({ limit: "10mb" }));

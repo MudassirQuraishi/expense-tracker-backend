@@ -235,8 +235,7 @@ const loginUser = async (req, res) => {
             message: "Logged in successfully",
             success: true,
             encryptedId: jwtToken,
-            isFirstTimeUser: user.firstLogin,
-            keepLoggedIn: user.keepLoggedIn,
+            user: user,
         });
     } catch (error) {
         console.log(error);

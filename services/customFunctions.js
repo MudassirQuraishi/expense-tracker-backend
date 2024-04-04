@@ -22,7 +22,7 @@ const sendVerificationEmail = async (email) => {
             port: 587,
             auth: {
                 user: "mudassir.quraishi14@outlook.com",
-                pass: "xsmtpsib-571ac74ce12fe241c9aec5c99a128b846d5929a6493eef2e27ed43aa3864c15e-D4wgWp8avxNLVnSt",
+                pass: process.env.SENDINBLUE_API_KEY,
             },
         });
 
